@@ -3,13 +3,18 @@ name: Deploy
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
-permissions:
-  contents: read
+concurrency:
+  group: deploy
+  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -19,16 +24,27 @@ jobs:
           cache: npm
           cache-dependency-path: cdk/package-lock.json
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Upsert API secret to SSM
+        run: |
+          aws ssm put-parameter \
+            --name "/anghami-plus/api-secret" \
+            --value "${{ secrets.API_SECRET }}" \
+            --type SecureString \
+            --overwrite
+
       - name: Install CDK dependencies
         run: npm ci
         working-directory: cdk
 
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
       - name: Deploy CDK stack
-        run: npx cdk deploy --require-approval never -c apiSecret=${{ secrets.API_SECRET }}
         working-directory: cdk
+        env:
+          CDK_DEFAULT_ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
+          CDK_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        run: npx cdk deploy --require-approval never
