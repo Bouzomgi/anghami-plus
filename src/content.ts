@@ -4,12 +4,20 @@ console.log('[anghami-plus] content script loaded');
 
 function injectFont(): void {
   if (document.getElementById('anghami-plus-font')) return;
-  const link = document.createElement('link');
-  link.id = 'anghami-plus-font';
-  link.rel = 'stylesheet';
-  link.href =
-    'https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic&display=swap';
-  document.head.appendChild(link);
+  const style = document.createElement('style');
+  style.id = 'anghami-plus-font';
+  style.textContent = `
+    [data-ap-lyrics],
+    [data-ap-lyrics] * {
+      font-family: 'Geeza Pro', serif !important;
+    }
+    [data-ap-lyrics] {
+      font-size: 1.3rem !important;
+      line-height: 2.2 !important;
+      direction: rtl !important;
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 // ── DOM helpers ───────────────────────────────────────────────────────────────
@@ -54,10 +62,7 @@ function findLyricsContainer(): HTMLElement | null {
 }
 
 function applyFont(el: HTMLElement): void {
-  el.style.fontFamily = '"Noto Naskh Arabic", serif';
-  el.style.fontSize = '1.3rem';
-  el.style.lineHeight = '2.2';
-  el.style.direction = 'rtl';
+  el.setAttribute('data-ap-lyrics', '');
 }
 
 // ── Page cleanup ──────────────────────────────────────────────────────────────
@@ -202,16 +207,31 @@ function renderTranslation(lyricsEl: HTMLElement): void {
 // ── Harakat toggle ────────────────────────────────────────────────────────────
 
 function renderHarakatToggle(lyricsEl: HTMLElement): void {
+  const toolbar = document.createElement('div');
+  toolbar.id = 'anghami-plus-toolbar';
+  toolbar.style.cssText =
+    'display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0;margin-bottom:0.75rem;font-family:system-ui,sans-serif;';
+
   const btn = document.createElement('button');
   btn.id = 'anghami-plus-harakat-btn';
   btn.textContent = 'Show Harakat';
   btn.style.cssText =
-    'display:block;margin:1rem 0;padding:0.4rem 1rem;background:#6c3fa0;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.9rem;';
+    'padding:0.3rem 0.85rem;background:#6c3fa0;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;white-space:nowrap;';
 
+  toolbar.appendChild(btn);
+
+  // Wrap lyrics text in its own element so the toolbar isn't wiped on harakat toggle
+  const lyricsBody = document.createElement('div');
+  lyricsBody.id = 'anghami-plus-lyrics-body';
+  lyricsBody.innerHTML = lyricsEl.innerHTML;
+  lyricsEl.innerHTML = '';
+  lyricsEl.appendChild(toolbar);
+  lyricsEl.appendChild(lyricsBody);
+
+  const originalHTML = lyricsBody.innerHTML;
+  const originalText = lyricsBody.textContent ?? '';
   let harakated: string | null = null;
   let showingHarakat = false;
-  const originalHTML = lyricsEl.innerHTML;
-  const originalText = lyricsEl.textContent ?? '';
 
   btn.addEventListener('click', async () => {
     if (!showingHarakat) {
@@ -226,34 +246,36 @@ function renderHarakatToggle(lyricsEl: HTMLElement): void {
         }
         harakated = res.result;
       }
-      lyricsEl.textContent = harakated;
+      lyricsBody.textContent = harakated;
       btn.textContent = 'Hide Harakat';
       showingHarakat = true;
     } else {
-      lyricsEl.innerHTML = originalHTML;
+      lyricsBody.innerHTML = originalHTML;
       btn.textContent = 'Show Harakat';
       showingHarakat = false;
     }
   });
-
-  lyricsEl.insertAdjacentElement('beforebegin', btn);
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-let cleaned = false;
+let inited = false;
 
 function tryCleanup(): void {
-  if (cleaned) return;
   if (!document.querySelector('img[src*="anghcdn.co"]')) return;
   const lyrics = findLyricsContainer();
   if (!lyrics) return;
-  cleaned = true;
-  observer.disconnect();
-  injectFont();
-  cleanupPage();
-  renderHarakatToggle(lyrics);
-  renderTranslation(lyrics);
+
+  // Always re-apply — React re-renders wipe the attribute
+  lyrics.setAttribute('data-ap-lyrics', '');
+
+  if (!inited) {
+    inited = true;
+    injectFont();
+    cleanupPage();
+    renderHarakatToggle(lyrics);
+    // renderTranslation(lyrics);
+  }
 }
 
 const observer = new MutationObserver(tryCleanup);

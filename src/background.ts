@@ -33,7 +33,10 @@ chrome.runtime.onMessage.addListener(
     })
       .then((res) => res.json() as Promise<LambdaResponse>)
       .then((data) => sendResponse(data))
-      .catch((err: Error) => sendResponse({ error: err.message }));
+      .catch((err: Error) => {
+        console.error('[anghami-plus] fetch error', err);
+        sendResponse({ error: err.message });
+      });
 
     return true; // keep message channel open for async response
   }
