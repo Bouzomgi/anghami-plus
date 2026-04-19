@@ -139,6 +139,7 @@ export const handler = async (
     const result =
       action === 'harakat'
         ? raw
+            .replace(/\\/g, '') // strip model-artifact backslashes
             .replace(/\u064E/g, '') // strip fatha
             .replace( // strip non-tanwin harakat from word-final letters
               /([\u0600-\u06FF])([\u064B-\u0652]*)(?=[^\u0600-\u06FF\u064B-\u0652]|$)/gm,
