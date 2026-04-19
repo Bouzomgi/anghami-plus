@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Anghami Plus — Visual Test</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #f5f5f5;
+        font-family: sans-serif;
+      }
+      .album-section {
+        background: white;
+        padding: 20px 80px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        direction: rtl;
+      }
+      .lyrics-page-module__crH_KW__lyrics_body {
+        padding: 40px 80px;
+      }
+      /* Matches Anghami's actual pre styles */
+      pre.lyrics-body-module__ekz3TW__lyrics_body_container {
+        font-family: 'Geeza Pro', serif;
+        font-size: 28px;
+        line-height: 1.7;
+        margin: 0;
+        padding: 0 40px 0 0;
+        text-align: right;
+        white-space: pre-wrap;
+        direction: rtl;
+        color: rgb(0, 0, 0);
+        font-weight: 400;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- img src must contain "anghcdn.co" for the content script to activate -->
+    <section class="album-section">
+      <img
+        src="https://anghcdn.co/fake-for-testing.jpg"
+        style="width: 80px; height: 80px; object-fit: cover; background: #ccc"
+        onerror="this.style.background='#ccc'"
+      />
+      <strong>زفوا القمر — الوليد الحلاني</strong>
+    </section>
+
+    <div class="lyrics-page-module__crH_KW__lyrics_body">
+      <div class="lyrics-page-module__crH_KW__lyrics">
+        <pre class="lyrics-body-module__ekz3TW__lyrics_body_container">زفوا القمر يا أهل الدار القمر ماشي غندرة
+ عم بيغنوا حجار الدار عروستنا منورة
+ زفوا القمر يا أهل الدار القمر ماشي غندرة
+ عم بيغنوا حجار الدار عروستنا منورة
+
+ الله، الله يحميكي يا أختي ويهنيكي
+ برقص خيل بضوي الليل كل ما بطلع فيكي
+ ويا وجه الخير عليّ ظلي شمس مضوية
+ نقيتي أحلى عريس قلبه مثل السكرة
+
+ زفوا القمر يا أهل الدار القمر ماشي غندرة
+ عم بيغنوا حجار الدار عروستنا منورة</pre>
+      </div>
+    </div>
+
+    <script>
+      // Mock Chrome extension API
+      window.chrome = {
+        runtime: {
+          sendMessage: function (msg, callback) {
+            if (msg.action === 'harakat') {
+              setTimeout(function () {
+                callback({
+                  result:
+                    'زِفُّوا القَمَر يا أَهْل الدّار القَمَر ماشِي غَنْدَرة\n عِم بِيغَنُّوا حِجّار الدّار عَروسِتنا مَنوَّرة\n زِفُّوا القَمَر يا أَهْل الدّار القَمَر ماشِي غَنْدَرة\n عِم بِيغَنُّوا حِجّار الدّار عَروسِتنا مَنوَّرة\n \n اللَّه، اللَّه يِحمِيكِي يا أُختِي وِيهَنِّيكِي\n بِرقُص خَيْل بِضَوِي اللَّيْل كُل ما بِطْلَع فِيكِي\n وِيا وِجّه الخَيْر عَلَيّ ظَلِّي شَمْس مَضوِيّة\n نِقِيتِي أَحْلى عَرِيس قَلبُه مِثْل السَّكَرة\n \n زِفُّوا القَمَر يا أَهْل الدّار القَمَر ماشِي غَنْدَرة\n عِم بِيغَنُّوا حِجّار الدّار عَروسِتنا مَنوَّرة',
+                });
+              }, 300);
+            } else {
+              callback({ error: 'Unknown action' });
+            }
+          },
+        },
+        storage: {
+          local: {
+            get: function (keys, cb) {
+              cb({});
+            },
+            set: function (data, cb) {
+              if (cb) cb();
+            },
+          },
+        },
+      };
+    </script>
+    <script src="../dist/content.js"></script>
+  </body>
+</html>
