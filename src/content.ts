@@ -179,31 +179,6 @@ async function callLambda(
   return res;
 }
 
-// ── Translation section ───────────────────────────────────────────────────────
-
-function renderTranslation(lyricsEl: HTMLElement): void {
-  const container = document.createElement('div');
-  container.id = 'anghami-plus-translation';
-  container.style.cssText =
-    'margin-top:2rem;padding:1rem;border-top:1px solid #ccc;font-size:1rem;line-height:1.8;color:#eee;';
-
-  const heading = document.createElement('h3');
-  heading.textContent = 'English Translation';
-  heading.style.cssText = 'margin:0 0 0.75rem;font-size:1rem;color:#aaa;';
-
-  const body = document.createElement('p');
-  body.textContent = 'Loading…';
-  body.style.whiteSpace = 'pre-wrap';
-
-  container.appendChild(heading);
-  container.appendChild(body);
-  lyricsEl.insertAdjacentElement('afterend', container);
-
-  callLambda('translate', lyricsEl.textContent ?? '').then((res) => {
-    body.textContent = res.result ?? `Error: ${res.error ?? 'unknown'}`;
-  });
-}
-
 // ── Harakat toggle ────────────────────────────────────────────────────────────
 
 function renderHarakatToggle(lyricsEl: HTMLElement): void {
