@@ -1,18 +1,24 @@
+import { createHash } from 'crypto';
 import {
   BedrockRuntimeClient,
   InvokeModelCommand,
 } from '@aws-sdk/client-bedrock-runtime';
 import {
-  SSMClient,
-  GetParameterCommand,
-} from '@aws-sdk/client-ssm';
-import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+} from '@aws-sdk/client-s3';
+import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
+import type {
+  APIGatewayProxyEventV2,
+  APIGatewayProxyResultV2,
+} from 'aws-lambda';
 
 const bedrockClient = new BedrockRuntimeClient({});
+const s3Client = new S3Client({});
 const ssmClient = new SSMClient({});
 const MODEL_ID = 'anthropic.claude-3-5-sonnet-20241022-v2:0';
 
-// Cached after first warm-up; survives across invocations in the same execution environment
 let cachedSecret: string | undefined;
 
 async function getApiSecret(): Promise<string> {
@@ -50,6 +56,32 @@ function jsonResponse(
   };
 }
 
+async function getFromS3(bucket: string, key: string): Promise<string | null> {
+  try {
+    const res = await s3Client.send(
+      new GetObjectCommand({ Bucket: bucket, Key: key })
+    );
+    return (await res.Body?.transformToString()) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function putToS3(
+  bucket: string,
+  key: string,
+  value: string
+): Promise<void> {
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: value,
+      ContentType: 'text/plain',
+    })
+  );
+}
+
 export const handler = async (
   event: APIGatewayProxyEventV2
 ): Promise<APIGatewayProxyResultV2> => {
@@ -74,6 +106,15 @@ export const handler = async (
     });
   }
 
+  const bucket = process.env.CACHE_BUCKET;
+  const hash = createHash('sha256').update(lyrics).digest('hex');
+  const s3Key = `${action}s/${hash}.txt`;
+
+  if (bucket) {
+    const cached = await getFromS3(bucket, s3Key);
+    if (cached) return jsonResponse(200, { result: cached });
+  }
+
   const prompt = PROMPTS[action](lyrics);
 
   try {
@@ -93,7 +134,11 @@ export const handler = async (
       content: { text: string }[];
     };
 
-    return jsonResponse(200, { result: payload.content[0].text });
+    const result = payload.content[0].text;
+
+    if (bucket) await putToS3(bucket, s3Key, result);
+
+    return jsonResponse(200, { result });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return jsonResponse(500, { error: message });
