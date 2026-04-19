@@ -149,34 +149,13 @@ function cleanupPage(): void {
 
 type Action = 'translate' | 'harakat';
 
-async function sha256hex(text: string): Promise<string> {
-  const buf = await crypto.subtle.digest(
-    'SHA-256',
-    new TextEncoder().encode(text)
-  );
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
 async function callLambda(
   action: Action,
   lyrics: string
 ): Promise<{ result?: string; error?: string }> {
-  const hash = await sha256hex(lyrics);
-  const cacheKey = `ap:${action}:${hash}`;
-
-  const stored = await chrome.storage.local.get(cacheKey);
-  if (stored[cacheKey]) return { result: stored[cacheKey] as string };
-
-  const res = await new Promise<{ result?: string; error?: string }>(
-    (resolve) => {
-      chrome.runtime.sendMessage({ action, lyrics }, resolve);
-    }
-  );
-
-  if (res.result) await chrome.storage.local.set({ [cacheKey]: res.result });
-  return res;
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ action, lyrics }, resolve);
+  });
 }
 
 // ── Harakat toggle ────────────────────────────────────────────────────────────
