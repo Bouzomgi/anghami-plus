@@ -10,8 +10,13 @@ function injectFont(): void {
   document.head.appendChild(link);
 }
 
+const arabicCountCache = new WeakMap<Element, number>();
+
 function arabicCharCount(el: Element): number {
-  return (el.textContent?.match(/[\u0600-\u06FF]/g) ?? []).length;
+  if (arabicCountCache.has(el)) return arabicCountCache.get(el)!;
+  const count = (el.textContent?.match(/[\u0600-\u06FF]/g) ?? []).length;
+  arabicCountCache.set(el, count);
+  return count;
 }
 
 function getDepth(el: Element): number {
@@ -67,7 +72,6 @@ function unstickAlbumSection(albumArt: HTMLImageElement): void {
 }
 
 function hideAlbumCtAs(albumArt: HTMLImageElement): void {
-  // Walk up to find a section/article ancestor, or fall back a few levels
   const albumSection =
     albumArt.closest('section, article') ??
     albumArt.parentElement?.parentElement?.parentElement ??
@@ -75,10 +79,19 @@ function hideAlbumCtAs(albumArt: HTMLImageElement): void {
 
   if (!albumSection) return;
 
-  // Hide buttons (listen/like CTAs)
+  // Hide all buttons (listen/like CTAs)
   albumSection.querySelectorAll<HTMLElement>('button').forEach((btn) => {
     btn.style.display = 'none';
   });
+
+  // Hide anchor CTAs — keep only artist and album links
+  albumSection
+    .querySelectorAll<HTMLElement>(
+      'a:not([href*="/artist/"]):not([href*="/album/"])'
+    )
+    .forEach((a) => {
+      a.style.display = 'none';
+    });
 
   // Hide spans that look like play/like counts (only digits, commas, K, M, B)
   albumSection.querySelectorAll<HTMLElement>('span').forEach((span) => {
@@ -94,8 +107,7 @@ function hideAlbumCtAs(albumArt: HTMLImageElement): void {
 }
 
 function hideAfterLyrics(lyricsEl: HTMLElement): void {
-  const mainEl =
-    document.querySelector('main') ?? document.getElementById('__next');
+  const mainEl = document.querySelector('main');
   if (!mainEl) return;
 
   // Find the direct child of main that contains the lyrics
