@@ -134,7 +134,16 @@ export const handler = async (
     };
 
     const raw = payload.output.message.content[0].text;
-    const result = action === 'harakat' ? raw.replace(/\u064E/g, '') : raw;
+    const result =
+      action === 'harakat'
+        ? raw
+            .replace(/\u064E/g, '') // strip fatha
+            .replace( // strip non-tanwin harakat from word-final letters
+              /([\u0600-\u06FF])([\u064B-\u0652]*)(?=[^\u0600-\u06FF\u064B-\u0652]|$)/gm,
+              (_, letter: string, harakat: string) =>
+                letter + harakat.replace(/[\u064F\u0650\u0651\u0652]/g, '')
+            )
+        : raw;
 
     if (bucket) await putToS3(bucket, s3Key, result);
 
