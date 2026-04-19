@@ -3,7 +3,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
-import * as ssm from 'aws-cdk-lib/aws-ssm';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
 const SSM_SECRET_PATH = '/anghami-plus/api-secret';
@@ -12,16 +12,25 @@ export class AnghamiPlusStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    const cacheBucket = new s3.Bucket(this, 'CacheBucket', {
+      bucketName: `anghami-plus-cache-${this.account}-${this.region}`,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
     const fn = new lambdaNodejs.NodejsFunction(this, 'ProxyFunction', {
       functionName: 'anghami-plus-proxy',
       runtime: lambda.Runtime.NODEJS_20_X,
       entry: path.join(__dirname, '../src/handler/index.ts'),
       handler: 'handler',
       timeout: cdk.Duration.seconds(30),
-      environment: { SSM_SECRET_PATH },
+      environment: {
+        SSM_SECRET_PATH,
+        CACHE_BUCKET: cacheBucket.bucketName,
+      },
     });
 
-    // Lambda reads the secret from SSM at runtime
+    cacheBucket.grantReadWrite(fn);
+
     fn.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['ssm:GetParameter'],
@@ -35,7 +44,9 @@ export class AnghamiPlusStack extends cdk.Stack {
         actions: ['kms:Decrypt'],
         resources: ['*'],
         conditions: {
-          StringEquals: { 'kms:ViaService': `ssm.${this.region}.amazonaws.com` },
+          StringEquals: {
+            'kms:ViaService': `ssm.${this.region}.amazonaws.com`,
+          },
         },
       })
     );
@@ -59,5 +70,8 @@ export class AnghamiPlusStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, 'FunctionUrl', { value: fnUrl.url });
+    new cdk.CfnOutput(this, 'CacheBucketName', {
+      value: cacheBucket.bucketName,
+    });
   }
 }
