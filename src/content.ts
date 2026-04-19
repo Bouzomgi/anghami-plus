@@ -149,7 +149,6 @@ function cleanupPage(): void {
 
 type Action = 'translate' | 'harakat';
 
-
 async function callLambda(
   action: Action,
   lyrics: string
