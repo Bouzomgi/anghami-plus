@@ -189,14 +189,15 @@ function renderHarakatToggle(lyricsEl: HTMLElement): void {
 
   let harakated: string | null = null;
   let showingHarakat = false;
-  const original = lyricsEl.textContent ?? '';
+  const originalHTML = lyricsEl.innerHTML;
+  const originalText = lyricsEl.textContent ?? '';
 
   btn.addEventListener('click', async () => {
     if (!showingHarakat) {
       if (!harakated) {
         btn.textContent = 'Loading…';
         btn.disabled = true;
-        const res = await callLambda('harakat', original);
+        const res = await callLambda('harakat', originalText);
         btn.disabled = false;
         if (res.error || !res.result) {
           btn.textContent = `Error: ${res.error ?? 'unknown'}`;
@@ -208,7 +209,7 @@ function renderHarakatToggle(lyricsEl: HTMLElement): void {
       btn.textContent = 'Hide Harakat';
       showingHarakat = true;
     } else {
-      lyricsEl.textContent = original;
+      lyricsEl.innerHTML = originalHTML;
       btn.textContent = 'Show Harakat';
       showingHarakat = false;
     }
