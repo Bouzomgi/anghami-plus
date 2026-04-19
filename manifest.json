@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Anghami Plus",
+  "version": "1.0.0",
+  "description": "Better lyrics experience on kalimat.anghami.com",
+  "permissions": ["storage"],
+  "host_permissions": ["*://kalimat.anghami.com/*"],
+  "background": {
+    "service_worker": "dist/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://kalimat.anghami.com/lyrics/*"],
+      "js": ["dist/content.js"],
+      "css": ["styles.css"]
+    }
+  ],
+  "action": {
+    "default_popup": "options.html"
+  }
+}
