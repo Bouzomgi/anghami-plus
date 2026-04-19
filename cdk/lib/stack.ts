@@ -55,8 +55,8 @@ export class AnghamiPlusStack extends cdk.Stack {
       new iam.PolicyStatement({
         actions: ['bedrock:InvokeModel'],
         resources: [
-          `arn:aws:bedrock:*::foundation-model/anthropic.claude-3-7-sonnet-20250219-v1:0`,
-          `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/us.anthropic.claude-3-7-sonnet-20250219-v1:0`,
+          `arn:aws:bedrock:*::foundation-model/amazon.nova-pro-v1:0`,
+          `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/us.amazon.nova-pro-v1:0`,
         ],
       })
     );
