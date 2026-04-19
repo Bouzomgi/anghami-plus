@@ -1,5 +1,7 @@
 console.log('[anghami-plus] content script loaded');
 
+// ── Font ──────────────────────────────────────────────────────────────────────
+
 function injectFont(): void {
   if (document.getElementById('anghami-plus-font')) return;
   const link = document.createElement('link');
@@ -9,6 +11,8 @@ function injectFont(): void {
     'https://fonts.googleapis.com/css2?family=Amiri:ital@0;1&display=swap';
   document.head.appendChild(link);
 }
+
+// ── DOM helpers ───────────────────────────────────────────────────────────────
 
 const arabicCountCache = new WeakMap<Element, number>();
 
@@ -40,7 +44,6 @@ function findLyricsContainer(): HTMLElement | null {
     return arabicCharCount(el) >= MIN_ARABIC_CHARS;
   });
 
-  // Prefer deeper (more specific) elements; break ties by most Arabic chars
   candidates.sort((a, b) => {
     const dd = getDepth(b) - getDepth(a);
     if (dd !== 0) return dd;
@@ -56,6 +59,8 @@ function applyFont(el: HTMLElement): void {
   el.style.lineHeight = '2.2';
   el.style.direction = 'rtl';
 }
+
+// ── Page cleanup ──────────────────────────────────────────────────────────────
 
 function unstickAlbumSection(albumArt: HTMLImageElement): void {
   let el: HTMLElement | null = albumArt.parentElement;
@@ -79,12 +84,10 @@ function hideAlbumCtAs(albumArt: HTMLImageElement): void {
 
   if (!albumSection) return;
 
-  // Hide all buttons (listen/like CTAs)
   albumSection.querySelectorAll<HTMLElement>('button').forEach((btn) => {
     btn.style.display = 'none';
   });
 
-  // Hide anchor CTAs — keep only artist and album links
   albumSection
     .querySelectorAll<HTMLElement>(
       'a:not([href*="/artist/"]):not([href*="/album/"])'
@@ -93,7 +96,6 @@ function hideAlbumCtAs(albumArt: HTMLImageElement): void {
       a.style.display = 'none';
     });
 
-  // Hide spans that look like play/like counts (only digits, commas, K, M, B)
   albumSection.querySelectorAll<HTMLElement>('span').forEach((span) => {
     if (/^[\d,.\s]+[KMB]?$/.test(span.textContent?.trim() ?? '')) {
       const parent = span.parentElement;
@@ -107,7 +109,6 @@ function hideAlbumCtAs(albumArt: HTMLImageElement): void {
 }
 
 function hideAfterLyrics(lyricsEl: HTMLElement): void {
-  // Walk up the tree; at each level hide all next siblings, stopping at main/body
   let el: HTMLElement | null = lyricsEl;
   while (el && el.tagName !== 'MAIN' && el.tagName !== 'BODY') {
     let sibling = el.nextElementSibling;
@@ -139,6 +140,85 @@ function cleanupPage(): void {
   }
 }
 
+// ── Lambda messaging ──────────────────────────────────────────────────────────
+
+type Action = 'translate' | 'harakat';
+
+function callLambda(
+  action: Action,
+  lyrics: string
+): Promise<{ result?: string; error?: string }> {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ action, lyrics }, resolve);
+  });
+}
+
+// ── Translation section ───────────────────────────────────────────────────────
+
+function renderTranslation(lyricsEl: HTMLElement): void {
+  const container = document.createElement('div');
+  container.id = 'anghami-plus-translation';
+  container.style.cssText =
+    'margin-top:2rem;padding:1rem;border-top:1px solid #ccc;font-size:1rem;line-height:1.8;color:#eee;';
+
+  const heading = document.createElement('h3');
+  heading.textContent = 'English Translation';
+  heading.style.cssText = 'margin:0 0 0.75rem;font-size:1rem;color:#aaa;';
+
+  const body = document.createElement('p');
+  body.textContent = 'Loading…';
+  body.style.whiteSpace = 'pre-wrap';
+
+  container.appendChild(heading);
+  container.appendChild(body);
+  lyricsEl.insertAdjacentElement('afterend', container);
+
+  callLambda('translate', lyricsEl.textContent ?? '').then((res) => {
+    body.textContent = res.result ?? `Error: ${res.error ?? 'unknown'}`;
+  });
+}
+
+// ── Harakat toggle ────────────────────────────────────────────────────────────
+
+function renderHarakatToggle(lyricsEl: HTMLElement): void {
+  const btn = document.createElement('button');
+  btn.id = 'anghami-plus-harakat-btn';
+  btn.textContent = 'Show Harakat';
+  btn.style.cssText =
+    'display:block;margin:1rem 0;padding:0.4rem 1rem;background:#6c3fa0;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.9rem;';
+
+  let harakated: string | null = null;
+  let showingHarakat = false;
+  const original = lyricsEl.textContent ?? '';
+
+  btn.addEventListener('click', async () => {
+    if (!showingHarakat) {
+      if (!harakated) {
+        btn.textContent = 'Loading…';
+        btn.disabled = true;
+        const res = await callLambda('harakat', original);
+        btn.disabled = false;
+        if (res.error || !res.result) {
+          btn.textContent = `Error: ${res.error ?? 'unknown'}`;
+          return;
+        }
+        harakated = res.result;
+      }
+      lyricsEl.textContent = harakated;
+      btn.textContent = 'Hide Harakat';
+      showingHarakat = true;
+    } else {
+      lyricsEl.textContent = original;
+      btn.textContent = 'Show Harakat';
+      showingHarakat = false;
+    }
+  });
+
+  lyricsEl.insertAdjacentElement('beforebegin', btn);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
 let cleaned = false;
 
 function tryCleanup(): void {
@@ -150,10 +230,11 @@ function tryCleanup(): void {
   observer.disconnect();
   injectFont();
   cleanupPage();
+  renderHarakatToggle(lyrics);
+  renderTranslation(lyrics);
 }
 
 const observer = new MutationObserver(tryCleanup);
 observer.observe(document.documentElement, { childList: true, subtree: true });
 
-// Also try immediately in case the page is already rendered
 tryCleanup();
