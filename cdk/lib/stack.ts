@@ -25,7 +25,6 @@ export class AnghamiPlusStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       environment: {
         SSM_SECRET_PATH,
-        CACHE_BUCKET: cacheBucket.bucketName,
       },
     });
 
