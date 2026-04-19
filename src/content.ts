@@ -107,20 +107,15 @@ function hideAlbumCtAs(albumArt: HTMLImageElement): void {
 }
 
 function hideAfterLyrics(lyricsEl: HTMLElement): void {
-  const mainEl = document.querySelector('main');
-  if (!mainEl) return;
-
-  // Find the direct child of main that contains the lyrics
-  let ancestor: HTMLElement | null = lyricsEl;
-  while (ancestor && ancestor.parentElement !== mainEl) {
-    ancestor = ancestor.parentElement;
-  }
-  if (!ancestor) return;
-
-  let sibling = ancestor.nextElementSibling;
-  while (sibling) {
-    (sibling as HTMLElement).style.display = 'none';
-    sibling = sibling.nextElementSibling;
+  // Walk up the tree; at each level hide all next siblings, stopping at main/body
+  let el: HTMLElement | null = lyricsEl;
+  while (el && el.tagName !== 'MAIN' && el.tagName !== 'BODY') {
+    let sibling = el.nextElementSibling;
+    while (sibling) {
+      (sibling as HTMLElement).style.display = 'none';
+      sibling = sibling.nextElementSibling;
+    }
+    el = el.parentElement;
   }
 }
 
