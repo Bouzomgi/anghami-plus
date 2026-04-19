@@ -133,7 +133,8 @@ export const handler = async (
       output: { message: { content: { text: string }[] } };
     };
 
-    const result = payload.output.message.content[0].text;
+    const raw = payload.output.message.content[0].text;
+    const result = action === 'harakat' ? raw.replace(/[\u064E\u064B]/g, '') : raw;
 
     if (bucket) await putToS3(bucket, s3Key, result);
 
