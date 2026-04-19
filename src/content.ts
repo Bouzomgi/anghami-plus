@@ -184,6 +184,13 @@ function renderHarakatToggle(lyricsEl: HTMLElement): void {
 
   const originalHTML = lyricsBody.innerHTML;
   const originalText = lyricsBody.innerText;
+
+  // Capture line styles from original so harakat view matches visually
+  const sampleLine =
+    lyricsBody.querySelector<HTMLElement>('p, div, span') ?? lyricsBody;
+  const cs = getComputedStyle(sampleLine);
+  const lineCSS = `font-weight:${cs.fontWeight};margin-top:${cs.marginTop};margin-bottom:${cs.marginBottom};padding-top:${cs.paddingTop};padding-bottom:${cs.paddingBottom};`;
+
   let harakated: string | null = null;
   let showingHarakat = false;
 
@@ -200,7 +207,10 @@ function renderHarakatToggle(lyricsEl: HTMLElement): void {
         }
         harakated = res.result;
       }
-      lyricsBody.innerHTML = harakated.replace(/\n/g, '<br>');
+      lyricsBody.innerHTML = harakated
+        .split('\n')
+        .map((line) => `<p style="${lineCSS}">${line}</p>`)
+        .join('');
       btn.textContent = 'Hide Harakat';
       showingHarakat = true;
     } else {
