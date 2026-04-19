@@ -4,7 +4,10 @@
   "version": "1.0.0",
   "description": "Better lyrics experience on kalimat.anghami.com",
   "permissions": ["storage"],
-  "host_permissions": ["*://kalimat.anghami.com/*"],
+  "host_permissions": [
+    "*://kalimat.anghami.com/*",
+    "https://*.lambda-url.us-east-1.on.aws/*"
+  ],
   "background": {
     "service_worker": "dist/background.js"
   },
