@@ -2,10 +2,30 @@ import {
   BedrockRuntimeClient,
   InvokeModelCommand,
 } from '@aws-sdk/client-bedrock-runtime';
+import {
+  SSMClient,
+  GetParameterCommand,
+} from '@aws-sdk/client-ssm';
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
 
-const client = new BedrockRuntimeClient({});
+const bedrockClient = new BedrockRuntimeClient({});
+const ssmClient = new SSMClient({});
 const MODEL_ID = 'anthropic.claude-3-5-sonnet-20241022-v2:0';
+
+// Cached after first warm-up; survives across invocations in the same execution environment
+let cachedSecret: string | undefined;
+
+async function getApiSecret(): Promise<string> {
+  if (cachedSecret) return cachedSecret;
+  const res = await ssmClient.send(
+    new GetParameterCommand({
+      Name: process.env.SSM_SECRET_PATH,
+      WithDecryption: true,
+    })
+  );
+  cachedSecret = res.Parameter!.Value!;
+  return cachedSecret;
+}
 
 const PROMPTS = {
   translate: (lyrics: string) =>
@@ -33,7 +53,9 @@ function jsonResponse(
 export const handler = async (
   event: APIGatewayProxyEventV2
 ): Promise<APIGatewayProxyResultV2> => {
-  if (event.headers['x-api-secret'] !== process.env.API_SECRET) {
+  const apiSecret = await getApiSecret();
+
+  if (event.headers['x-api-secret'] !== apiSecret) {
     return jsonResponse(401, { error: 'Unauthorized' });
   }
 
@@ -47,7 +69,9 @@ export const handler = async (
   const { action, lyrics } = parsed;
 
   if (!lyrics || (action !== 'translate' && action !== 'harakat')) {
-    return jsonResponse(400, { error: 'action must be "translate" or "harakat", lyrics required' });
+    return jsonResponse(400, {
+      error: 'action must be "translate" or "harakat", lyrics required',
+    });
   }
 
   const prompt = PROMPTS[action](lyrics);
@@ -64,7 +88,7 @@ export const handler = async (
       }),
     });
 
-    const response = await client.send(command);
+    const response = await bedrockClient.send(command);
     const payload = JSON.parse(new TextDecoder().decode(response.body)) as {
       content: { text: string }[];
     };
