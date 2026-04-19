@@ -39,6 +39,8 @@ const PROMPTS = {
 
   harakat: (lyrics: string) =>
     `Add harakat (diacritical marks) to these Arabic song lyrics.\n` +
+    `These are song lyrics written in colloquial Arabic dialect (ammiyya), not Modern Standard Arabic (fusha). ` +
+    `Apply harakat according to how the words are actually pronounced in dialect, not their fusha equivalents.\n` +
     `Rules:\n` +
     `- INCLUDE: kasra (\\u0650), damma (\\u064F), shadda (\\u0651), sukun (\\u0652), tanwin kasra (\\u064D), tanwin damma (\\u064C), tanwin fatha (\\u064B)\n` +
     `- DO NOT ADD: fatha (\\u064E) — omit entirely\n` +
