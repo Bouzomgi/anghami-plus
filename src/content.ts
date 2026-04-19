@@ -204,7 +204,7 @@ function renderHarakatToggle(lyricsEl: HTMLElement): void {
   lyricsEl.appendChild(lyricsBody);
 
   const originalHTML = lyricsBody.innerHTML;
-  const originalText = lyricsBody.textContent ?? '';
+  const originalText = lyricsBody.innerText;
   let harakated: string | null = null;
   let showingHarakat = false;
 
@@ -221,7 +221,7 @@ function renderHarakatToggle(lyricsEl: HTMLElement): void {
         }
         harakated = res.result;
       }
-      lyricsBody.textContent = harakated;
+      lyricsBody.innerHTML = harakated.replace(/\n/g, '<br>');
       btn.textContent = 'Hide Harakat';
       showingHarakat = true;
     } else {
