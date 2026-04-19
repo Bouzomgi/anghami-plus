@@ -40,8 +40,8 @@ const PROMPTS = {
   harakat: (lyrics: string) =>
     `Add harakat (diacritical marks) to these Arabic song lyrics.\n` +
     `Rules:\n` +
-    `- INCLUDE: kasra (\\u0650), damma (\\u064F), shadda (\\u0651), sukun (\\u0652), tanwin kasra (\\u064D), tanwin damma (\\u064C)\n` +
-    `- DO NOT ADD: fatha (\\u064E) or tanwin fatha (\\u064B) — omit these entirely\n` +
+    `- INCLUDE: kasra (\\u0650), damma (\\u064F), shadda (\\u0651), sukun (\\u0652), tanwin kasra (\\u064D), tanwin damma (\\u064C), tanwin fatha (\\u064B)\n` +
+    `- DO NOT ADD: fatha (\\u064E) — omit entirely\n` +
     `Return only the harakated text, preserving line breaks.\n\n${lyrics}`,
 };
 
@@ -134,7 +134,7 @@ export const handler = async (
     };
 
     const raw = payload.output.message.content[0].text;
-    const result = action === 'harakat' ? raw.replace(/[\u064E\u064B]/g, '') : raw;
+    const result = action === 'harakat' ? raw.replace(/\u064E/g, '') : raw;
 
     if (bucket) await putToS3(bucket, s3Key, result);
 
