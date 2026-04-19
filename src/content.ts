@@ -205,11 +205,16 @@ function renderHarakatToggle(lyricsEl: HTMLElement): void {
       const wrapper = document.createElement('div');
       wrapper.innerHTML = originalHTML;
       const lineEls = Array.from(wrapper.querySelectorAll<HTMLElement>('p'));
+      const preEl = wrapper.querySelector<HTMLElement>('pre');
       const harakatLines = harakated.split('\n');
       if (lineEls.length > 0) {
+        const nonEmpty = harakatLines.filter((l) => l.trim() !== '');
         lineEls.forEach((el, i) => {
-          if (i < harakatLines.length) el.innerHTML = harakatLines[i];
+          if (i < nonEmpty.length) el.innerHTML = nonEmpty[i];
         });
+        lyricsBody.innerHTML = wrapper.innerHTML;
+      } else if (preEl) {
+        preEl.textContent = harakated;
         lyricsBody.innerHTML = wrapper.innerHTML;
       } else {
         lyricsBody.innerHTML = harakatLines
