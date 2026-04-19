@@ -8,7 +8,7 @@ function injectFont(): void {
   link.id = 'anghami-plus-font';
   link.rel = 'stylesheet';
   link.href =
-    'https://fonts.googleapis.com/css2?family=Amiri:ital@0;1&display=swap';
+    'https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic&display=swap';
   document.head.appendChild(link);
 }
 
@@ -54,7 +54,7 @@ function findLyricsContainer(): HTMLElement | null {
 }
 
 function applyFont(el: HTMLElement): void {
-  el.style.fontFamily = '"Amiri", serif';
+  el.style.fontFamily = '"Noto Naskh Arabic", serif';
   el.style.fontSize = '1.3rem';
   el.style.lineHeight = '2.2';
   el.style.direction = 'rtl';
