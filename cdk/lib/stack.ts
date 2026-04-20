@@ -22,7 +22,7 @@ export class AnghamiPlusStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_20_X,
       entry: path.join(__dirname, '../src/handler/index.ts'),
       handler: 'handler',
-      timeout: cdk.Duration.seconds(30),
+      timeout: cdk.Duration.seconds(60),
       environment: {
         SSM_SECRET_PATH,
       },
@@ -55,7 +55,6 @@ export class AnghamiPlusStack extends cdk.Stack {
         actions: ['bedrock:InvokeModel'],
         resources: [
           `arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-6`,
-          `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/us.anthropic.claude-sonnet-4-6`,
         ],
       })
     );
