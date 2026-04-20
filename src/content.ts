@@ -387,7 +387,13 @@ function renderBreakdown(lyricsEl: HTMLElement): void {
       // Build verse groups from the original lyrics blank-line separators
       const verses = originalText
         .split(/\n\s*\n/)
-        .map((v) => v.trim().split('\n').map((l) => l.trim()).filter(Boolean))
+        .map((v) =>
+          v
+            .trim()
+            .split('\n')
+            .map((l) => l.trim())
+            .filter(Boolean)
+        )
         .filter((v) => v.length > 0);
 
       const byArabic = new Map(breakdown!.map((l) => [l.arabic.trim(), l]));
