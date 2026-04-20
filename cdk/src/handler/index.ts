@@ -17,7 +17,7 @@ import type {
 const bedrockClient = new BedrockRuntimeClient({});
 const s3Client = new S3Client({});
 const ssmClient = new SSMClient({});
-const MODEL_ID = 'us.amazon.nova-pro-v1:0';
+const MODEL_ID = 'us.anthropic.claude-3-7-sonnet-20250219-v1:0';
 
 let cachedSecret: string | undefined;
 
@@ -135,17 +135,18 @@ export const handler = async (
       contentType: 'application/json',
       accept: 'application/json',
       body: JSON.stringify({
-        messages: [{ role: 'user', content: [{ text: prompt }] }],
-        inferenceConfig: { max_new_tokens: 8192 },
+        anthropic_version: 'bedrock-2023-05-31',
+        max_tokens: 8192,
+        messages: [{ role: 'user', content: prompt }],
       }),
     });
 
     const response = await bedrockClient.send(command);
     const payload = JSON.parse(new TextDecoder().decode(response.body)) as {
-      output: { message: { content: { text: string }[] } };
+      content: { text: string }[];
     };
 
-    const raw = payload.output.message.content[0].text;
+    const raw = payload.content[0].text;
     const result =
       action === 'harakat'
         ? raw
