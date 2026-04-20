@@ -76,6 +76,13 @@
                     'زِفُّوا القَمَر يا أَهْل الدّار القَمَر ماشِي غَنْدَرة\n عِم بِيغَنُّوا حِجّار الدّار عَروسِتنا مَنوَّرة\n زِفُّوا القَمَر يا أَهْل الدّار القَمَر ماشِي غَنْدَرة\n عِم بِيغَنُّوا حِجّار الدّار عَروسِتنا مَنوَّرة\n \n اللَّه، اللَّه يِحمِيكِي يا أُختِي وِيهَنِّيكِي\n بِرقُص خَيْل بِضَوِي اللَّيْل كُل ما بِطْلَع فِيكِي\n وِيا وِجّه الخَيْر عَلَيّ ظَلِّي شَمْس مَضوِيّة\n نِقِيتِي أَحْلى عَرِيس قَلبُه مِثْل السَّكَرة\n \n زِفُّوا القَمَر يا أَهْل الدّار القَمَر ماشِي غَنْدَرة\n عِم بِيغَنُّوا حِجّار الدّار عَروسِتنا مَنوَّرة',
                 });
               }, 300);
+            } else if (msg.action === 'translate') {
+              setTimeout(function () {
+                callback({
+                  result:
+                    'Carry the moon, O people of the house, the moon walks gracefully\nWhile the neighbors sing, our bride lights up the place\nCarry the moon, O people of the house, the moon walks gracefully\nWhile the neighbors sing, our bride lights up the place\n\nGod bless you, my sister, and bring you joy\nLike a horse dancing in moonlight every time it appears before you\nAnd the face of goodness shines upon you like a radiant sun\nYou chose the finest groom, his heart sweet as sugar\n\nCarry the moon, O people of the house, the moon walks gracefully\nWhile the neighbors sing, our bride lights up the place',
+                });
+              }, 300);
             } else {
               callback({ error: 'Unknown action' });
             }

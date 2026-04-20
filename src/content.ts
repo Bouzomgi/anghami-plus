@@ -234,6 +234,61 @@ function renderHarakatToggle(lyricsEl: HTMLElement): void {
   });
 }
 
+// ── Translation ───────────────────────────────────────────────────────────────
+
+function renderTranslation(lyricsEl: HTMLElement): void {
+  const originalText = document.getElementById(
+    'anghami-plus-lyrics-body'
+  )!.innerText;
+
+  const section = document.createElement('div');
+  section.id = 'anghami-plus-translation';
+  section.style.cssText =
+    'margin-top:2rem;padding-top:1.5rem;border-top:1px solid #ddd;font-family:system-ui,sans-serif;direction:ltr;text-align:left;';
+
+  const btn = document.createElement('button');
+  btn.id = 'anghami-plus-translate-btn';
+  btn.textContent = 'Show Translation';
+  btn.style.cssText =
+    'padding:0.3rem 0.85rem;background:#6c3fa0;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;white-space:nowrap;';
+
+  const body = document.createElement('div');
+  body.id = 'anghami-plus-translation-body';
+  body.style.cssText =
+    'display:none;margin-top:1rem;font-size:1rem;line-height:1.8;color:#333;white-space:pre-wrap;';
+
+  section.appendChild(btn);
+  section.appendChild(body);
+  lyricsEl.appendChild(section);
+
+  let translated: string | null = null;
+  let showing = false;
+
+  btn.addEventListener('click', async () => {
+    if (!showing) {
+      if (!translated) {
+        btn.textContent = 'Loading…';
+        btn.disabled = true;
+        const res = await callLambda('translate', originalText);
+        btn.disabled = false;
+        if (res.error || !res.result) {
+          btn.textContent = `Error: ${res.error ?? 'unknown'}`;
+          return;
+        }
+        translated = res.result;
+      }
+      body.textContent = translated;
+      body.style.display = 'block';
+      btn.textContent = 'Hide Translation';
+      showing = true;
+    } else {
+      body.style.display = 'none';
+      btn.textContent = 'Show Translation';
+      showing = false;
+    }
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 let inited = false;
@@ -251,7 +306,7 @@ function tryCleanup(): void {
     injectFont();
     cleanupPage();
     renderHarakatToggle(lyrics);
-    // renderTranslation(lyrics);
+    renderTranslation(lyrics);
   }
 }
 
