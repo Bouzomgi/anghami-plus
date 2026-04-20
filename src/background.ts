@@ -12,6 +12,10 @@ interface LambdaResponse {
   error?: string;
 }
 
+function cacheKey(action: Action, lyrics: string): string {
+  return `${action}:${lyrics}`;
+}
+
 chrome.runtime.onMessage.addListener(
   (
     msg: LambdaRequest,
@@ -27,21 +31,35 @@ chrome.runtime.onMessage.addListener(
       return false;
     }
 
-    fetch(LAMBDA_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Api-Secret': API_SECRET,
-      },
-      body: JSON.stringify({ action: msg.action, lyrics: msg.lyrics }),
-    })
-      .then((res) => res.json() as Promise<LambdaResponse>)
-      .then((data) => sendResponse(data))
-      .catch((err: Error) => {
-        console.error('[anghami-plus] fetch error', err);
-        sendResponse({ error: err.message });
-      });
+    const key = cacheKey(msg.action, msg.lyrics);
 
-    return true; // keep message channel open for async response
+    chrome.storage.local.get(key, (stored) => {
+      if (stored[key]) {
+        sendResponse({ result: stored[key] as string });
+        return;
+      }
+
+      fetch(LAMBDA_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Api-Secret': API_SECRET,
+        },
+        body: JSON.stringify({ action: msg.action, lyrics: msg.lyrics }),
+      })
+        .then((res) => res.json() as Promise<LambdaResponse>)
+        .then((data) => {
+          if (data.result) {
+            chrome.storage.local.set({ [key]: data.result });
+          }
+          sendResponse(data);
+        })
+        .catch((err: Error) => {
+          console.error('[anghami-plus] fetch error', err);
+          sendResponse({ error: err.message });
+        });
+    });
+
+    return true;
   }
 );

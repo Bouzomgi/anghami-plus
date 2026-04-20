@@ -15,6 +15,22 @@ function injectFont(): void {
       font-size: 1.3rem !important;
       line-height: 2.2 !important;
       direction: rtl !important;
+      padding: 0 7.5% !important;
+      box-sizing: border-box !important;
+      width: 100% !important;
+    }
+    [data-ap-lyrics] * {
+      font-size: inherit !important;
+    }
+    [data-ap-lyrics] pre {
+      padding: 0 !important;
+    }
+    @media (max-width: 600px) {
+      [data-ap-lyrics] {
+        font-size: 1rem !important;
+        line-height: 1.9 !important;
+        padding: 0 1.5% !important;
+      }
     }
   `;
   document.head.appendChild(style);
@@ -49,6 +65,9 @@ function findLyricsContainer(): HTMLElement | null {
   ).filter((el) => {
     if (el.closest('header, footer, nav')) return false;
     if (['BODY', 'MAIN', 'HTML'].includes(el.tagName)) return false;
+    // Skip elements inside our injected container (but allow the container itself)
+    const apContainer = el.closest('[data-ap-lyrics]');
+    if (apContainer && apContainer !== el) return false;
     return arabicCharCount(el) >= MIN_ARABIC_CHARS;
   });
 
@@ -142,6 +161,17 @@ function cleanupPage(): void {
   if (lyrics) {
     applyFont(lyrics);
     hideAfterLyrics(lyrics);
+
+    // Expand lyrics to full width — the parent is a row-reverse flex with a
+    // side-section column that we don't need. Hide siblings and go full-width.
+    const lyricsBody = lyrics.parentElement;
+    if (lyricsBody) {
+      lyricsBody.style.display = 'block';
+      Array.from(lyricsBody.children).forEach((child) => {
+        if (child !== lyrics) (child as HTMLElement).style.display = 'none';
+      });
+    }
+    lyrics.style.width = '100%';
   }
 }
 
@@ -164,7 +194,7 @@ function renderHarakatToggle(lyricsEl: HTMLElement): void {
   const toolbar = document.createElement('div');
   toolbar.id = 'anghami-plus-toolbar';
   toolbar.style.cssText =
-    'display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0;margin-bottom:0.75rem;font-family:system-ui,sans-serif;';
+    'display:flex;align-items:center;justify-content:flex-end;gap:0.5rem;padding:0.5rem 0;margin-bottom:0.75rem;font-family:system-ui,sans-serif;direction:ltr;';
 
   const btn = document.createElement('button');
   btn.id = 'anghami-plus-harakat-btn';
@@ -244,7 +274,7 @@ function renderTranslation(lyricsEl: HTMLElement): void {
   const section = document.createElement('div');
   section.id = 'anghami-plus-translation';
   section.style.cssText =
-    'margin-top:2rem;padding-top:1.5rem;border-top:1px solid #ddd;font-family:system-ui,sans-serif;direction:ltr;text-align:left;';
+    'margin-top:3rem;padding-top:2rem;border-top:2px solid #e8dff5;font-family:system-ui,sans-serif;direction:ltr;text-align:left;';
 
   const btn = document.createElement('button');
   btn.id = 'anghami-plus-translate-btn';
@@ -305,7 +335,7 @@ function renderBreakdown(lyricsEl: HTMLElement): void {
   const section = document.createElement('div');
   section.id = 'anghami-plus-breakdown';
   section.style.cssText =
-    'margin-top:2rem;padding-top:1.5rem;border-top:1px solid #ddd;font-family:system-ui,sans-serif;direction:ltr;text-align:left;';
+    'margin-top:3rem;padding-top:2rem;border-top:2px solid #e8dff5;font-family:system-ui,sans-serif;direction:ltr;text-align:left;';
 
   const btn = document.createElement('button');
   btn.id = 'anghami-plus-breakdown-btn';
@@ -314,7 +344,7 @@ function renderBreakdown(lyricsEl: HTMLElement): void {
     'padding:0.3rem 0.85rem;background:#6c3fa0;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;white-space:nowrap;';
 
   const body = document.createElement('div');
-  body.style.cssText = 'display:none;margin-top:1.5rem;';
+  body.style.cssText = 'display:none;margin-top:1rem;';
 
   section.appendChild(btn);
   section.appendChild(body);
@@ -339,23 +369,60 @@ function renderBreakdown(lyricsEl: HTMLElement): void {
             .replace(/^```(?:json)?\s*/m, '')
             .replace(/\s*```$/m, '')
             .trim();
-          breakdown = JSON.parse(cleaned) as LineBreakdown[];
+          const parsed = JSON.parse(cleaned) as LineBreakdown[];
+          // Deduplicate by normalized arabic text (repeated choruses → keep first)
+          const seen = new Set<string>();
+          breakdown = parsed.filter((line) => {
+            const key = line.arabic.trim();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
         } catch {
           btn.textContent = 'Error: could not parse response';
           return;
         }
       }
-      body.innerHTML = breakdown
-        .map(
-          (line) => `
-          <div style="margin-bottom:2rem;">
-            <div style="font-family:'Geeza Pro',serif;font-size:1.2rem;direction:rtl;text-align:right;margin-bottom:0.5rem;color:#111;">${line.arabic}</div>
-            <div style="border-left:3px solid #6c3fa0;padding-left:0.75rem;color:#444;margin-bottom:0.6rem;font-style:italic;">${line.translation}</div>
-            <ul style="margin:0;padding-left:1.25rem;color:#555;line-height:1.8;">
-              ${line.phrases.map((p) => `<li><span style="font-family:'Geeza Pro',serif;">${p.arabic}</span> = ${p.english}</li>`).join('')}
-            </ul>
-          </div>`
+
+      // Build verse groups from the original lyrics blank-line separators
+      const verses = originalText
+        .split(/\n\s*\n/)
+        .map((v) =>
+          v
+            .trim()
+            .split('\n')
+            .map((l) => l.trim())
+            .filter(Boolean)
         )
+        .filter((v) => v.length > 0);
+
+      const byArabic = new Map(breakdown!.map((l) => [l.arabic.trim(), l]));
+      const seenInRender = new Set<string>();
+
+      body.innerHTML = verses
+        .map((verseLines, vi) => {
+          const lineHtml = verseLines
+            .map((rawLine) => {
+              const line = byArabic.get(rawLine);
+              if (!line || seenInRender.has(rawLine)) return '';
+              seenInRender.add(rawLine);
+              return `
+              <div style="margin-bottom:1.5rem;">
+                <div style="font-family:'Geeza Pro',serif;font-size:1.2rem;direction:rtl;text-align:right;margin-bottom:0.5rem;color:#111;">${line.arabic}</div>
+                <div style="border-left:3px solid #6c3fa0;padding-left:0.75rem;color:#444;margin-bottom:0.6rem;font-style:italic;">${line.translation}</div>
+                <ul style="margin:0;padding-left:1.25rem;color:#555;line-height:1.8;">
+                  ${line.phrases.map((p) => `<li><span style="font-family:'Geeza Pro',serif;">${p.arabic}</span> = ${p.english}</li>`).join('')}
+                </ul>
+              </div>`;
+            })
+            .join('');
+          if (!lineHtml.trim()) return '';
+          return `
+          <div style="margin-bottom:2rem;padding:1.25rem 1rem;background:#faf7ff;border-radius:8px;border:1px solid #e8dff5;">
+            <div style="font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#9b7ec8;margin-bottom:1rem;">Verse ${vi + 1}</div>
+            ${lineHtml}
+          </div>`;
+        })
         .join('');
       body.style.display = 'block';
       btn.textContent = 'Hide Word Breakdown';
