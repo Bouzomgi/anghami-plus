@@ -307,6 +307,8 @@ function tryCleanup(): void {
     cleanupPage();
     renderHarakatToggle(lyrics);
     renderTranslation(lyrics);
+    const songTitle = document.querySelector('h1')?.textContent?.trim();
+    if (songTitle) document.title = songTitle;
   }
 }
 
