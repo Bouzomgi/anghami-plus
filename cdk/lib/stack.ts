@@ -55,6 +55,7 @@ export class AnghamiPlusStack extends cdk.Stack {
         actions: ['bedrock:InvokeModel'],
         resources: [
           `arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-6`,
+          `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/us.anthropic.claude-sonnet-4-6`,
         ],
       })
     );
