@@ -147,7 +147,7 @@ function cleanupPage(): void {
 
 // ── Lambda messaging + local cache ────────────────────────────────────────────
 
-type Action = 'translate' | 'harakat';
+type Action = 'translate' | 'harakat' | 'breakdown';
 
 async function callLambda(
   action: Action,
@@ -289,6 +289,85 @@ function renderTranslation(lyricsEl: HTMLElement): void {
   });
 }
 
+// ── Word breakdown ────────────────────────────────────────────────────────────
+
+interface LineBreakdown {
+  arabic: string;
+  translation: string;
+  phrases: { arabic: string; english: string }[];
+}
+
+function renderBreakdown(lyricsEl: HTMLElement): void {
+  const originalText = document.getElementById(
+    'anghami-plus-lyrics-body'
+  )!.innerText;
+
+  const section = document.createElement('div');
+  section.id = 'anghami-plus-breakdown';
+  section.style.cssText =
+    'margin-top:2rem;padding-top:1.5rem;border-top:1px solid #ddd;font-family:system-ui,sans-serif;direction:ltr;text-align:left;';
+
+  const btn = document.createElement('button');
+  btn.id = 'anghami-plus-breakdown-btn';
+  btn.textContent = 'Show Word Breakdown';
+  btn.style.cssText =
+    'padding:0.3rem 0.85rem;background:#6c3fa0;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;white-space:nowrap;';
+
+  const body = document.createElement('div');
+  body.style.cssText = 'display:none;margin-top:1.5rem;';
+
+  section.appendChild(btn);
+  section.appendChild(body);
+  lyricsEl.appendChild(section);
+
+  let breakdown: LineBreakdown[] | null = null;
+  let showing = false;
+
+  btn.addEventListener('click', async () => {
+    if (!showing) {
+      if (!breakdown) {
+        btn.textContent = 'Loading…';
+        btn.disabled = true;
+        const res = await callLambda('breakdown', originalText);
+        btn.disabled = false;
+        if (res.error || !res.result) {
+          btn.textContent = `Error: ${res.error ?? 'unknown'}`;
+          return;
+        }
+        try {
+          const cleaned = res.result
+            .replace(/^```(?:json)?\s*/m, '')
+            .replace(/\s*```$/m, '')
+            .trim();
+          breakdown = JSON.parse(cleaned) as LineBreakdown[];
+        } catch {
+          btn.textContent = 'Error: could not parse response';
+          return;
+        }
+      }
+      body.innerHTML = breakdown
+        .map(
+          (line) => `
+          <div style="margin-bottom:2rem;">
+            <div style="font-family:'Geeza Pro',serif;font-size:1.2rem;direction:rtl;text-align:right;margin-bottom:0.5rem;color:#111;">${line.arabic}</div>
+            <div style="border-left:3px solid #6c3fa0;padding-left:0.75rem;color:#444;margin-bottom:0.6rem;font-style:italic;">${line.translation}</div>
+            <ul style="margin:0;padding-left:1.25rem;color:#555;line-height:1.8;">
+              ${line.phrases.map((p) => `<li><span style="font-family:'Geeza Pro',serif;">${p.arabic}</span> = ${p.english}</li>`).join('')}
+            </ul>
+          </div>`
+        )
+        .join('');
+      body.style.display = 'block';
+      btn.textContent = 'Hide Word Breakdown';
+      showing = true;
+    } else {
+      body.style.display = 'none';
+      btn.textContent = 'Show Word Breakdown';
+      showing = false;
+    }
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 let inited = false;
@@ -307,6 +386,7 @@ function tryCleanup(): void {
     cleanupPage();
     renderHarakatToggle(lyrics);
     renderTranslation(lyrics);
+    renderBreakdown(lyrics);
     const songTitle = document.querySelector('h1')?.textContent?.trim();
     if (songTitle) document.title = songTitle;
   }

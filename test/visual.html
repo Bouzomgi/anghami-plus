@@ -83,6 +83,40 @@
                     'Carry the moon, O people of the house, the moon walks gracefully\nWhile the neighbors sing, our bride lights up the place\nCarry the moon, O people of the house, the moon walks gracefully\nWhile the neighbors sing, our bride lights up the place\n\nGod bless you, my sister, and bring you joy\nLike a horse dancing in moonlight every time it appears before you\nAnd the face of goodness shines upon you like a radiant sun\nYou chose the finest groom, his heart sweet as sugar\n\nCarry the moon, O people of the house, the moon walks gracefully\nWhile the neighbors sing, our bride lights up the place',
                 });
               }, 300);
+            } else if (msg.action === 'breakdown') {
+              setTimeout(function () {
+                callback({
+                  result: JSON.stringify([
+                    {
+                      arabic: 'زفوا القمر يا أهل الدار القمر ماشي غندرة',
+                      translation: 'Carry the moon, O people of the house, the moon walks gracefully',
+                      phrases: [
+                        { arabic: 'زفوا', english: 'carry/escort in a wedding procession' },
+                        { arabic: 'أهل الدار', english: 'people of the house (the family)' },
+                        { arabic: 'غندرة', english: 'graceful, coquettish movement' },
+                      ],
+                    },
+                    {
+                      arabic: 'عم بيغنوا حجار الدار عروستنا منورة',
+                      translation: 'The neighbors are singing, our bride lights up the place',
+                      phrases: [
+                        { arabic: 'عم بيغنوا', english: 'they are singing (dialect progressive)' },
+                        { arabic: 'حجار الدار', english: 'neighbors (lit. "stones of the house")' },
+                        { arabic: 'منورة', english: 'radiant, lit up (fem.) — high praise' },
+                      ],
+                    },
+                    {
+                      arabic: 'برقص خيل بضوي الليل كل ما بطلع فيكي',
+                      translation: 'Dancing like horses lighting up the night every time I look at you',
+                      phrases: [
+                        { arabic: 'برقص خيل', english: 'dancing like horses — lively, spirited movement' },
+                        { arabic: 'بضوي الليل', english: 'you light up the night' },
+                        { arabic: 'بطلع فيكي', english: 'I look at you (dialect: بطلع = I look/emerge)' },
+                      ],
+                    },
+                  ]),
+                });
+              }, 300);
             } else {
               callback({ error: 'Unknown action' });
             }

@@ -1,6 +1,6 @@
 import { LAMBDA_URL, API_SECRET } from './config';
 
-type Action = 'translate' | 'harakat';
+type Action = 'translate' | 'harakat' | 'breakdown';
 
 interface LambdaRequest {
   action: Action;
@@ -18,7 +18,11 @@ chrome.runtime.onMessage.addListener(
     _sender: chrome.runtime.MessageSender,
     sendResponse: (r: LambdaResponse) => void
   ) => {
-    if (msg.action !== 'translate' && msg.action !== 'harakat') {
+    if (
+      msg.action !== 'translate' &&
+      msg.action !== 'harakat' &&
+      msg.action !== 'breakdown'
+    ) {
       sendResponse({ error: 'Unknown action' });
       return false;
     }
