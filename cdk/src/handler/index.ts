@@ -45,6 +45,16 @@ const PROMPTS = {
     `- INCLUDE: kasra (\\u0650), damma (\\u064F), shadda (\\u0651), sukun (\\u0652), tanwin kasra (\\u064D), tanwin damma (\\u064C), tanwin fatha (\\u064B)\n` +
     `- DO NOT ADD: fatha (\\u064E) — omit entirely\n` +
     `Return only the harakated text, preserving line breaks.\n\n${lyrics}`,
+
+  breakdown: (lyrics: string) =>
+    `You are helping a student learn colloquial Arabic through song lyrics.\n` +
+    `For each non-empty line, provide:\n` +
+    `1. A natural English translation of the full line\n` +
+    `2. 2-4 key phrases worth learning — focus on interesting vocabulary, idioms, or constructions; skip trivial words if they stand alone\n\n` +
+    `These are dialect (ammiyya) lyrics, not Modern Standard Arabic.\n\n` +
+    `Return a JSON array with no markdown or code fences. Each element:\n` +
+    `{"arabic":"original line","translation":"English translation","phrases":[{"arabic":"key phrase","english":"meaning"}]}\n\n` +
+    `Lyrics:\n${lyrics}`,
 };
 
 function jsonResponse(
@@ -102,7 +112,7 @@ export const handler = async (
 
   const { action, lyrics } = parsed;
 
-  if (!lyrics || (action !== 'translate' && action !== 'harakat')) {
+  if (!lyrics || (action !== 'translate' && action !== 'harakat' && action !== 'breakdown')) {
     return jsonResponse(400, {
       error: 'action must be "translate" or "harakat", lyrics required',
     });
@@ -126,7 +136,7 @@ export const handler = async (
       accept: 'application/json',
       body: JSON.stringify({
         messages: [{ role: 'user', content: [{ text: prompt }] }],
-        inferenceConfig: { max_new_tokens: 4096 },
+        inferenceConfig: { max_new_tokens: 8192 },
       }),
     });
 
