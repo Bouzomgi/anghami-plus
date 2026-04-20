@@ -48,12 +48,12 @@ const PROMPTS = {
 
   breakdown: (lyrics: string) =>
     `You are helping a student learn colloquial Arabic through song lyrics.\n` +
-    `For each non-empty line, provide:\n` +
-    `1. A natural English translation of the full line\n` +
-    `2. 2-4 key phrases worth learning — focus on interesting vocabulary, idioms, or constructions; skip trivial words if they stand alone\n\n` +
     `These are dialect (ammiyya) lyrics, not Modern Standard Arabic.\n\n` +
+    `For each non-empty line, provide:\n` +
+    `1. A LITERAL English translation — word-for-word as much as possible, so the learner can map each Arabic word to its English equivalent. Preserve the Arabic word order where readable.\n` +
+    `2. 2-4 key words or short phrases from that line with their individual meanings. Focus on vocab, verb forms, or idioms worth knowing.\n\n` +
     `Return a JSON array with no markdown or code fences. Each element:\n` +
-    `{"arabic":"original line","translation":"English translation","phrases":[{"arabic":"key phrase","english":"meaning"}]}\n\n` +
+    `{"arabic":"original line","translation":"literal English translation","phrases":[{"arabic":"word or phrase","english":"meaning"}]}\n\n` +
     `Lyrics:\n${lyrics}`,
 };
 
