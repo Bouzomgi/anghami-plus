@@ -17,7 +17,7 @@ import type {
 const bedrockClient = new BedrockRuntimeClient({});
 const s3Client = new S3Client({});
 const ssmClient = new SSMClient({});
-const MODEL_ID = 'anthropic.claude-sonnet-4-6';
+const MODEL_ID = 'us.anthropic.claude-sonnet-4-6';
 
 let cachedSecret: string | undefined;
 
